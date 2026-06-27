@@ -1,4 +1,4 @@
-package com.youtrust.hackathon;
+package com.youtrust.hackathon.model;
 
 /**
  * 認証方式。PASSWORD は従来のメール+パスワード登録、
@@ -8,8 +8,4 @@ public enum AuthProvider {
     PASSWORD,
     GOOGLE,
     GITHUB;
-
-    public boolean isOAuth() {
-        return this != PASSWORD;
-    }
 }

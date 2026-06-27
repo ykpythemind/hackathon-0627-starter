@@ -1,7 +1,7 @@
-package com.youtrust.hackathon;
+package com.youtrust.hackathon.view;
 
 /**
- * ユーザー登録の結果。
+ * View。登録結果として呼び出し元に返すレスポンス。
  */
 public class RegisterResult {
 

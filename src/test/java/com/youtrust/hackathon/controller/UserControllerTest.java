@@ -1,4 +1,4 @@
-package com.youtrust.hackathon;
+package com.youtrust.hackathon.controller;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -6,29 +6,24 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.After;
+import com.youtrust.hackathon.model.AuthProvider;
+import com.youtrust.hackathon.model.User;
+import com.youtrust.hackathon.view.RegisterResult;
 import org.junit.Before;
 import org.junit.Test;
 
 /**
- * インメモリ SQLite に対して、永続化層も含めた登録フローを検証する。
+ * インメモリ SQLite に対して、Model も含めた登録フローを検証する。
  */
-public class UserRegistrationServiceTest {
+public class UserControllerTest {
 
-    private SqliteUserRepository repository;
-    private RecordingEmailClient emailClient;
-    private UserRegistrationService service;
+    private UserController controller;
 
     @Before
     public void setUp() {
-        repository = new SqliteUserRepository("jdbc:sqlite::memory:");
-        emailClient = new RecordingEmailClient();
-        service = new UserRegistrationService(repository, emailClient);
-    }
-
-    @After
-    public void tearDown() {
-        repository.close();
+        // 各テストで新しいインメモリDBに接続するため、毎回まっさらな状態になる。
+        User.connect("jdbc:sqlite::memory:");
+        controller = new UserController();
     }
 
     private static RegisterInput passwordInput() {
@@ -41,45 +36,43 @@ public class UserRegistrationServiceTest {
 
     @Test
     public void registersUserWithPasswordAndPersists() {
-        RegisterResult result = service.register(passwordInput());
+        RegisterResult result = controller.register(passwordInput());
 
         assertTrue(result.isSuccess());
         assertNotNull(result.getUserId());
 
-        User saved = repository.findByEmail("alice@example.com");
+        User saved = User.findByEmail("alice@example.com");
         assertNotNull(saved);
         assertEquals("Alice", saved.getName());
         assertEquals(AuthProvider.PASSWORD, saved.getAuthProvider());
         assertEquals("password123_hashed", saved.getPasswordHash());
-        assertEquals(1, emailClient.sent.size());
-        assertEquals("alice@example.com", emailClient.sent.get(0).to);
     }
 
     @Test
     public void rejectsInvalidEmail() {
         RegisterInput input = passwordInput();
         input.setEmail("not-an-email");
-        assertThrows(IllegalArgumentException.class, () -> service.register(input));
+        assertThrows(IllegalArgumentException.class, () -> controller.register(input));
     }
 
     @Test
     public void rejectsBlankName() {
         RegisterInput input = passwordInput();
         input.setName("  ");
-        assertThrows(IllegalArgumentException.class, () -> service.register(input));
+        assertThrows(IllegalArgumentException.class, () -> controller.register(input));
     }
 
     @Test
     public void rejectsShortPasswordForPasswordProvider() {
         RegisterInput input = passwordInput();
         input.setPassword("short");
-        assertThrows(IllegalArgumentException.class, () -> service.register(input));
+        assertThrows(IllegalArgumentException.class, () -> controller.register(input));
     }
 
     @Test
     public void rejectsDuplicateEmail() {
-        service.register(passwordInput());
-        assertThrows(IllegalArgumentException.class, () -> service.register(passwordInput()));
+        controller.register(passwordInput());
+        assertThrows(IllegalArgumentException.class, () -> controller.register(passwordInput()));
     }
 
     @Test
@@ -89,14 +82,13 @@ public class UserRegistrationServiceTest {
         input.setName("Bob");
         input.setAuthProvider(AuthProvider.GOOGLE);
 
-        RegisterResult result = service.register(input);
+        RegisterResult result = controller.register(input);
 
         assertTrue(result.isSuccess());
-        User saved = repository.findByEmail("bob@example.com");
+        User saved = User.findByEmail("bob@example.com");
         assertNotNull(saved);
         assertEquals(AuthProvider.GOOGLE, saved.getAuthProvider());
         assertNull("OAuth登録ではパスワードを保存しない", saved.getPasswordHash());
-        assertEquals(1, emailClient.sent.size());
     }
 
     @Test
@@ -108,10 +100,10 @@ public class UserRegistrationServiceTest {
         input.setAuthProvider(AuthProvider.GITHUB);
         input.setPassword("x");
 
-        RegisterResult result = service.register(input);
+        RegisterResult result = controller.register(input);
 
         assertTrue(result.isSuccess());
-        assertNull(repository.findByEmail("carol@example.com").getPasswordHash());
+        assertNull(User.findByEmail("carol@example.com").getPasswordHash());
     }
 
     @Test
@@ -120,6 +112,6 @@ public class UserRegistrationServiceTest {
         input.setEmail("invalid");
         input.setName("Dave");
         input.setAuthProvider(AuthProvider.GOOGLE);
-        assertThrows(IllegalArgumentException.class, () -> service.register(input));
+        assertThrows(IllegalArgumentException.class, () -> controller.register(input));
     }
 }

@@ -1,7 +1,9 @@
-package com.youtrust.hackathon;
+package com.youtrust.hackathon.controller;
+
+import com.youtrust.hackathon.model.AuthProvider;
 
 /**
- * ユーザー登録リクエストの入力値。
+ * 登録リクエストの入力値。
  */
 public class RegisterInput {
 
