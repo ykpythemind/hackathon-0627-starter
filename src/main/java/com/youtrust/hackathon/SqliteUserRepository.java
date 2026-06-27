@@ -34,7 +34,8 @@ public class SqliteUserRepository implements UserRepository, AutoCloseable {
                 "  id TEXT PRIMARY KEY," +
                 "  email TEXT NOT NULL UNIQUE," +
                 "  name TEXT NOT NULL," +
-                "  password_hash TEXT" +
+                "  password_hash TEXT," +
+                "  auth_provider TEXT NOT NULL" +
                 ")"
             );
         }
@@ -42,7 +43,7 @@ public class SqliteUserRepository implements UserRepository, AutoCloseable {
 
     @Override
     public User findByEmail(String email) {
-        String sql = "SELECT id, email, name, password_hash FROM users WHERE email = ?";
+        String sql = "SELECT id, email, name, password_hash, auth_provider FROM users WHERE email = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, email);
             try (ResultSet rs = ps.executeQuery()) {
@@ -54,6 +55,7 @@ public class SqliteUserRepository implements UserRepository, AutoCloseable {
                 user.setEmail(rs.getString("email"));
                 user.setName(rs.getString("name"));
                 user.setPasswordHash(rs.getString("password_hash"));
+                user.setAuthProvider(AuthProvider.valueOf(rs.getString("auth_provider")));
                 return user;
             }
         } catch (SQLException e) {
@@ -66,12 +68,13 @@ public class SqliteUserRepository implements UserRepository, AutoCloseable {
         if (user.getId() == null) {
             user.setId(UUID.randomUUID().toString());
         }
-        String sql = "INSERT INTO users (id, email, name, password_hash) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO users (id, email, name, password_hash, auth_provider) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, user.getId());
             ps.setString(2, user.getEmail());
             ps.setString(3, user.getName());
             ps.setString(4, user.getPasswordHash());
+            ps.setString(5, user.getAuthProvider().name());
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new IllegalStateException("ユーザー保存に失敗しました: " + user.getEmail(), e);

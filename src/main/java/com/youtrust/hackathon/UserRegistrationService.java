@@ -26,7 +26,19 @@ public class UserRegistrationService {
      * @throws IllegalArgumentException 入力が不正、またはメールが重複しているとき
      */
     public RegisterResult register(RegisterInput input) {
-        validate(input);
+        AuthProvider provider = input.getAuthProvider() == null
+            ? AuthProvider.PASSWORD
+            : input.getAuthProvider();
+
+        validateCommon(input);
+
+        // 認証方式で分岐。OAuth は authorization code grant が完了済みの前提なので、
+        // パスワードは検証も保存もせず、プロバイダ検証済みのメール/名前をそのまま使う。
+        String passwordHash = null;
+        if (provider == AuthProvider.PASSWORD) {
+            validatePassword(input);
+            passwordHash = hashPassword(input.getPassword());
+        }
 
         if (userRepository.findByEmail(input.getEmail()) != null) {
             throw new IllegalArgumentException("このメールアドレスはすでに登録されています");
@@ -35,22 +47,26 @@ public class UserRegistrationService {
         User user = new User();
         user.setEmail(input.getEmail());
         user.setName(input.getName());
-        user.setPasswordHash(hashPassword(input.getPassword()));
+        user.setPasswordHash(passwordHash);
+        user.setAuthProvider(provider);
         userRepository.save(user);
 
         sendWelcomeEmail(user);
-        logger.info("ユーザー登録完了: " + user.getEmail());
+        logger.info("ユーザー登録完了: " + user.getEmail() + " (" + provider + ")");
 
         return new RegisterResult(true, user.getId(), "登録が完了しました");
     }
 
-    private void validate(RegisterInput input) {
+    private void validateCommon(RegisterInput input) {
         if (input.getEmail() == null || !input.getEmail().contains("@")) {
             throw new IllegalArgumentException("メールアドレスが無効です");
         }
         if (input.getName() == null || input.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("名前は必須です");
         }
+    }
+
+    private void validatePassword(RegisterInput input) {
         if (input.getPassword() == null || input.getPassword().length() < 8) {
             throw new IllegalArgumentException("パスワードは8文字以上必要です");
         }

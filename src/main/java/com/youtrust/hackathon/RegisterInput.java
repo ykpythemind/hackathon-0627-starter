@@ -8,6 +8,8 @@ public class RegisterInput {
     private String email;
     private String password;
     private String name;
+    /** 認証方式。未指定なら従来どおりパスワード登録として扱う。 */
+    private AuthProvider authProvider = AuthProvider.PASSWORD;
 
     public String getEmail() {
         return email;
@@ -31,5 +33,13 @@ public class RegisterInput {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public AuthProvider getAuthProvider() {
+        return authProvider;
+    }
+
+    public void setAuthProvider(AuthProvider authProvider) {
+        this.authProvider = authProvider;
     }
 }

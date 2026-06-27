@@ -8,7 +8,9 @@ public class User {
     private String id;
     private String email;
     private String name;
+    /** OAuth 登録の場合は null。 */
     private String passwordHash;
+    private AuthProvider authProvider;
 
     public String getId() {
         return id;
@@ -40,5 +42,13 @@ public class User {
 
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    public AuthProvider getAuthProvider() {
+        return authProvider;
+    }
+
+    public void setAuthProvider(AuthProvider authProvider) {
+        this.authProvider = authProvider;
     }
 }
